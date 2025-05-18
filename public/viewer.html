@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Viewer</title>
+  <style>
+    body {
+      margin: 0;
+      background: transparent;
+      font-family: sans-serif;
+    }
+    #viewer {
+      display: flex;
+      align-items: center;
+      padding: 20px;
+      font-size: 2rem;
+      color: white;
+    }
+    #viewer img {
+      height: 60px;
+      margin-right: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div id="viewer"></div>
+
+  <script>
+    const socket = new WebSocket("ws://" + location.host);
+    const viewer = document.getElementById("viewer");
+
+    socket.onmessage = ({ data }) => {
+      const msg = JSON.parse(data);
+      if (msg.type === "updateViewer" && msg.team) {
+        const team = msg.team;
+        viewer.innerHTML = `
+          <img src="${team.logo}" />
+          ${team.name}
+        `;
+      }
+    };
+  </script>
+</body>
+</html>

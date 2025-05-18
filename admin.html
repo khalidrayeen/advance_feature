@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Panel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #1e1e1e;
+      color: #f0f0f0;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100px;
+      font-size: 1rem;
+      background-color: #2e2e2e;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 10px;
+      border-radius: 6px;
+    }
+
+    input[type="number"],
+    input[type="color"] {
+      padding: 6px;
+      font-size: 1rem;
+      margin-top: 6px;
+      background-color: #2e2e2e;
+      color: #fff;
+      border: 1px solid #555;
+      border-radius: 6px;
+    }
+
+    button {
+      background-color: #444;
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      font-size: 1rem;
+      margin: 6px 8px 6px 0;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #666;
+    }
+
+    label {
+      display: inline-block;
+      margin: 8px 12px 8px 0;
+    }
+
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .team-card {
+      border: 2px solid #555;
+      padding: 30px 10px;
+      font-size: 1.4rem;
+      text-align: center;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: #2a2a2a;
+      color: #f0f0f0;
+    }
+
+    .team-card:hover {
+      background-color: #333;
+    }
+
+    .team-card.selected {
+      background-color: #005f73;
+      border-color: #00b4d8;
+      font-weight: bold;
+      box-shadow: 0 0 6px #00b4d8;
+    }
+  </style>
+</head>
+<body>
+  <h2>Paste Teams from Excel</h2>
+  <div class="controls">
+    <textarea id="bulkInput" placeholder="Paste here from Excel: Team Name [TAB] Logo URL..."></textarea><br/>
+    <input id="slotStart" type="number" placeholder="Starting Slot Number (e.g. 2)" />
+    <button onclick="addTeams()">Paste</button>
+    <button onclick="clearAll()">Clear All</button>
+  </div>
+
+  <label>Bar Background Color: <input type="color" id="bgColor" value="#a76b28" /></label>
+  <label>Text Color: <input type="color" id="textColor" value="#ffffff" /></label>
+  <button onclick="applyColors()">Apply Colors</button>
+
+  <h3>Team Slots</h3>
+  <div id="teamList" class="team-grid"></div>
+
+  <script>
+    const socket = new WebSocket("ws://" + location.hostname + ":3000");
+
+    function applyColors() {
+      const bgColor = document.getElementById("bgColor").value;
+      const textColor = document.getElementById("textColor").value;
+      const colorMessage = {
+        type: "updateColors",
+        backgroundColor: bgColor,
+        textColor: textColor
+      };
+      socket.send(JSON.stringify(colorMessage));
+    }
+
+    function addTeams() {
+      const lines = document.getElementById("bulkInput").value.trim().split('\n');
+      const startSlot = parseInt(document.getElementById("slotStart").value);
+      if (isNaN(startSlot)) return alert("Enter a valid slot number.");
+
+      lines.forEach((line, i) => {
+        const [name, logo] = line.split(/\t| {2,}/); // tab or 2+ spaces
+        if (name && logo) {
+          const team = {
+            name: name.trim(),
+            logo: logo.trim(),
+            slot: startSlot + i
+          };
+          socket.send(JSON.stringify({ type: "addTeam", team }));
+        }
+      });
+    }
+
+    function clearAll() {
+      if (confirm("Are you sure you want to clear all teams?")) {
+        socket.send(JSON.stringify({ type: "clearAll" }));
+      }
+    }
+
+    function selectTeam(team) {
+      socket.send(JSON.stringify({ type: "selectTeam", team }));
+
+      // Highlight selected card
+      document.querySelectorAll('.team-card').forEach(card => {
+        card.classList.remove('selected');
+      });
+      const selected = document.querySelector(`[data-slot="${team.slot}"]`);
+      if (selected) selected.classList.add('selected');
+    }
+
+    socket.onmessage = ({ data }) => {
+      const msg = JSON.parse(data);
+      if (msg.type === "teamList") {
+        const list = msg.teamList;
+        document.getElementById("teamList").innerHTML = list.map(team => `
+          <div class="team-card" data-slot="${team.slot}" onclick='selectTeam(${JSON.stringify(team)})'>
+            Slot ${team.slot}
+          </div>
+        `).join("");
+      }
+    };
+  </script>
+</body>
+</html>
