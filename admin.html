@@ -101,7 +101,9 @@
   <div id="teamList" class="team-grid"></div>
 
   <script>
-    const socket = new WebSocket("ws://" + location.hostname + ":3000");
+    const protocol = location.protocol === "https:" ? "wss://" : "ws://";
+const socket = new WebSocket(protocol + location.hostname + (location.port ? ':' + location.port : ''));
+
 
     function applyColors() {
       const bgColor = document.getElementById("bgColor").value;

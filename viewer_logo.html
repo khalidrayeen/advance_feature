@@ -35,7 +35,9 @@
   </div>
 
   <script>
-    const socket = new WebSocket("ws://" + location.hostname + ":3000");
+    const protocol = location.protocol === "https:" ? "wss://" : "ws://";
+const socket = new WebSocket(protocol + location.hostname + (location.port ? ':' + location.port : ''));
+
     const logo = document.getElementById("teamLogo");
 
     socket.onmessage = ({ data }) => {

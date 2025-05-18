@@ -10,10 +10,8 @@ const wss = new WebSocket.Server({ server });
 let teamList = [];
 let selectedTeam = null;
 
-// Serve static files (HTML, JS, CSS, etc.)
 app.use(express.static(path.join(__dirname)));
 
-// Function to broadcast data to all connected WebSocket clients
 function broadcast(data) {
   const msg = JSON.stringify(data);
   wss.clients.forEach(client => {
@@ -24,7 +22,6 @@ function broadcast(data) {
 }
 
 wss.on('connection', function connection(ws) {
-  // Send current state on new connection
   ws.send(JSON.stringify({ type: 'teamList', teamList }));
   if (selectedTeam) {
     ws.send(JSON.stringify({ type: 'selectTeam', team: selectedTeam }));
@@ -71,8 +68,8 @@ wss.on('connection', function connection(ws) {
   });
 });
 
-// Start the server
-const PORT = 3000;
+// ✅ use dynamic port (needed for Render)
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
